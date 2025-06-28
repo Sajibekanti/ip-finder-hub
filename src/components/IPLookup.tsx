@@ -1,11 +1,11 @@
+
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Globe, Clock, Wifi, Building, Shield, Loader2, Key, Settings } from 'lucide-react';
+import { Search, MapPin, Globe, Clock, Wifi, Building, Shield, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface IPInfo {
   query: string;
@@ -29,47 +29,20 @@ const IPLookup = () => {
   const [ipInfo, setIpInfo] = useState<IPInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [autoDetected, setAutoDetected] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [tempApiKey, setTempApiKey] = useState('');
-  const [showApiDialog, setShowApiDialog] = useState(false);
   const { toast } = useToast();
-
-  // Load API key from localStorage on component mount
-  useEffect(() => {
-    const savedApiKey = localStorage.getItem('ipapi_key');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    }
-  }, []);
 
   // Auto-detect user's IP on component mount
   useEffect(() => {
     const detectUserIP = async () => {
       try {
         setLoading(true);
-        const url = apiKey 
-          ? `https://pro.ip-api.com/json/?key=${apiKey}`
-          : 'http://ip-api.com/json/';
-        
-        const response = await fetch(url);
+        const response = await fetch('http://ip-api.com/json/');
         const data = await response.json();
         
         if (data.status === 'success') {
           setIpInfo(data);
           setIpAddress(data.query);
           setAutoDetected(true);
-        } else if (data.status === 'fail') {
-          console.error('IP detection failed:', data.message);
-          // Fall back to free API if pro API fails
-          if (apiKey) {
-            const fallbackResponse = await fetch('http://ip-api.com/json/');
-            const fallbackData = await fallbackResponse.json();
-            if (fallbackData.status === 'success') {
-              setIpInfo(fallbackData);
-              setIpAddress(fallbackData.query);
-              setAutoDetected(true);
-            }
-          }
         }
       } catch (error) {
         console.error('Error detecting IP:', error);
@@ -79,7 +52,7 @@ const IPLookup = () => {
     };
 
     detectUserIP();
-  }, [apiKey]);
+  }, []);
 
   const lookupIP = async (ip?: string) => {
     const searchIP = ip || ipAddress;
@@ -94,11 +67,7 @@ const IPLookup = () => {
 
     setLoading(true);
     try {
-      const url = apiKey 
-        ? `https://pro.ip-api.com/json/${searchIP}?key=${apiKey}`
-        : `http://ip-api.com/json/${searchIP}`;
-      
-      const response = await fetch(url);
+      const response = await fetch(`http://ip-api.com/json/${searchIP}`);
       const data = await response.json();
       
       if (data.status === 'success') {
@@ -126,27 +95,6 @@ const IPLookup = () => {
     }
   };
 
-  const saveApiKey = () => {
-    if (tempApiKey.trim()) {
-      localStorage.setItem('ipapi_key', tempApiKey.trim());
-      setApiKey(tempApiKey.trim());
-      setShowApiDialog(false);
-      toast({
-        title: "Success",
-        description: "API key saved successfully"
-      });
-    } else {
-      localStorage.removeItem('ipapi_key');
-      setApiKey('');
-      setShowApiDialog(false);
-      toast({
-        title: "Success",
-        description: "API key removed"
-      });
-    }
-    setTempApiKey('');
-  };
-
   const InfoCard = ({ icon: Icon, title, value, color = "text-gray-600" }: {
     icon: any;
     title: string;
@@ -168,69 +116,12 @@ const IPLookup = () => {
       <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50">
         <CardContent className="p-8">
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-4 mb-3">
-              <h2 className="text-3xl font-bold text-gray-800">
-                IP Address Lookup Tool
-              </h2>
-              <Dialog open={showApiDialog} onOpenChange={setShowApiDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Settings className="h-4 w-4" />
-                    API Settings
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <Key className="h-5 w-5" />
-                      IP-API.com API Key Settings
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        Enter your IP-API.com API key for enhanced features and higher rate limits.
-                      </p>
-                      <Input
-                        type="password"
-                        placeholder="Enter your API key (optional)"
-                        value={tempApiKey}
-                        onChange={(e) => setTempApiKey(e.target.value)}
-                        className="mb-4"
-                      />
-                      <div className="flex gap-2">
-                        <Button onClick={saveApiKey} className="flex-1">
-                          Save API Key
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            setTempApiKey('');
-                            saveApiKey();
-                          }}
-                        >
-                          Remove Key
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      <p>• API key is stored locally in your browser</p>
-                      <p>• Get your API key from <a href="https://members.ip-api.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ip-api.com</a></p>
-                      <p>• Pro API provides higher rate limits and additional features</p>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-3">
+              IP Address Lookup Tool
+            </h2>
             <p className="text-lg text-gray-600">
               Enter any IP address to get detailed geolocation and network information
             </p>
-            {apiKey && (
-              <Badge variant="secondary" className="bg-green-100 text-green-800 mt-2">
-                <Key className="h-3 w-3 mr-1" />
-                Pro API Enabled
-              </Badge>
-            )}
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
